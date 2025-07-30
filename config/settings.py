@@ -23,7 +23,10 @@ class Settings(BaseSettings):
     
     # LLM Configuration
     ollama_base_url: str = "http://localhost:11434"
-    default_model: str = "mistral:7b"
+    default_model: str = "mistral:7b-instruct-q4_K_M"
+    ollama_timeout: int = 120  # seconds
+    max_tokens: int = 2000
+    temperature: float = 0.7
     
     # Security Configuration
     secret_key: str = "your-secret-key-change-in-production"

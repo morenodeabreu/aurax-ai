@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import uvicorn
 import logging
-from core.rag import retriever
+from core.orchestrator import orchestrator
 
 app = FastAPI(
     title="AURAX API",
@@ -29,15 +29,18 @@ class GenerateRequest(BaseModel):
     """Request model for generation endpoint"""
     prompt: str
     max_tokens: Optional[int] = 1000
+    model: Optional[str] = None
+    context_threshold: Optional[float] = 0.5
 
 
 class GenerateResponse(BaseModel):
     """Response model for generation endpoint"""
+    success: bool
     query: str
     context: List[Dict[str, Any]]
-    response: str
-    tokens_used: int
-    status: str
+    response: Optional[str]
+    metadata: Optional[Dict[str, Any]]
+    error: Optional[str] = None
 
 
 @app.get("/health")
@@ -49,58 +52,109 @@ async def health_check():
 @app.post("/generate", response_model=GenerateResponse)
 async def generate(request: GenerateRequest):
     """
-    RAG-enhanced generation endpoint
-    Retrieves relevant context from knowledge base before generating response
+    RAG-enhanced generation endpoint with LLM integration
+    Retrieves relevant context and generates contextual responses using LLM
     """
     if not request.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
     
     try:
-        # Retrieve relevant context using RAG
-        context_docs = await retriever.search_relevant_context(
-            query_text=request.prompt,
-            top_k=3,
-            score_threshold=0.5
+        # Use orchestrator for RAG + LLM pipeline
+        result = await orchestrator.generate_contextual_response(
+            query=request.prompt,
+            max_context_docs=3,
+            context_score_threshold=request.context_threshold or 0.5,
+            model=request.model
         )
         
-        # For MVP, create a simple response incorporating context
-        if context_docs:
-            context_texts = [doc["text"][:200] + "..." for doc in context_docs]
-            response_text = f"Based on relevant context, processing: {request.prompt[:100]}..."
-        else:
-            context_texts = []
-            response_text = f"No relevant context found. Processing: {request.prompt[:100]}..."
+        if not result["success"]:
+            # Return error response but don't raise HTTP exception
+            return GenerateResponse(
+                success=False,
+                query=request.prompt,
+                context=result.get("context", []),
+                response=None,
+                metadata=None,
+                error=result.get("error", "Unknown error")
+            )
         
         return GenerateResponse(
-            query=request.prompt,
-            context=[{"text": text, "score": doc.get("score", 0)} for text, doc in zip(context_texts, context_docs)],
-            response=response_text,
-            tokens_used=len(response_text.split()),
-            status="success"
+            success=True,
+            query=result["query"],
+            context=result["context"],
+            response=result["response"],
+            metadata=result["metadata"]
         )
         
     except Exception as e:
         logging.error(f"Error in generate endpoint: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        return GenerateResponse(
+            success=False,
+            query=request.prompt,
+            context=[],
+            response=None,
+            metadata=None,
+            error="Internal server error"
+        )
 
 
 @app.get("/")
 async def root():
     """Root endpoint"""
-    return {"message": "AURAX API is running", "docs": "/docs"}
+    return {
+        "message": "AURAX API is running", 
+        "version": "0.1.0",
+        "features": ["RAG", "LLM Integration", "Knowledge Base"],
+        "docs": "/docs"
+    }
+
+
+@app.get("/system/status")
+async def get_system_status():
+    """Get comprehensive system status including LLM and RAG components"""
+    try:
+        status = await orchestrator.get_system_status()
+        return status
+    except Exception as e:
+        logging.error(f"Error getting system status: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/rag/info")
 async def get_rag_info():
-    """Get information about the RAG knowledge base"""
+    """Get information about the RAG knowledge base (legacy endpoint)"""
     try:
-        info = await retriever.get_knowledge_base_info()
-        if info:
-            return {"status": "success", "knowledge_base": info}
+        status = await orchestrator.get_system_status()
+        if status["success"]:
+            return {
+                "status": "success", 
+                "knowledge_base": status["components"]["rag"]["knowledge_base"]
+            }
         else:
-            return {"status": "error", "message": "Could not retrieve knowledge base info"}
+            return {"status": "error", "message": "Could not retrieve system status"}
     except Exception as e:
         logging.error(f"Error getting RAG info: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.post("/knowledge/add")
+async def add_knowledge(documents: List[Dict[str, Any]]):
+    """Add documents to the knowledge base"""
+    try:
+        if not documents:
+            raise HTTPException(status_code=400, detail="No documents provided")
+        
+        result = await orchestrator.add_knowledge(documents)
+        
+        if result["success"]:
+            return result
+        else:
+            raise HTTPException(status_code=500, detail=result["error"])
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error adding knowledge: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
