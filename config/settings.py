@@ -14,9 +14,12 @@ class Settings(BaseSettings):
     api_version: str = "0.1.0"
     debug: bool = False
     
-    # Database Configuration
+    # Qdrant Configuration
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: Optional[str] = None
+    qdrant_collection_name: str = "aurax_knowledge_base"
+    qdrant_vector_size: int = 384  # all-MiniLM-L6-v2 embedding size
+    qdrant_distance_metric: str = "Cosine"
     
     # LLM Configuration
     ollama_base_url: str = "http://localhost:11434"
