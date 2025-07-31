@@ -30,10 +30,70 @@
 | **Prioridade na GPU**       | Baixa    | Média         | Alta             |
 | **Suporte**                 | Comunidade| 24h          | 2h               |
 
+## Estrutura do Projeto
+
+```
+aurax/
+├── backend/          # FastAPI + RAG + Multi-LLM (Sprints 0-2 ✅)
+├── frontend/         # Next.js 14 + TypeScript + Tailwind (Sprint 3 ✅)
+├── config/           # Configurações e variáveis de ambiente
+├── docs/             # Documentação técnica e ROADMAP
+├── infrastructure/   # Docker, Kubernetes, CI/CD (futuro)
+├── scripts/          # Scripts de automação e deploy
+└── tests/            # Testes integrados (futuro)
+```
+
+## Status dos Sprints
+
+### ✅ Sprint 0 (MVP) - Concluído
+- Backend FastAPI com sistema RAG + Qdrant
+- Integração LLM (Mistral 7B via Ollama)
+- Pipeline RAG → LLM funcional
+- Containerização Docker
+
+### ✅ Sprint 1 (Autonomia Web) - Concluído  
+- Web scraping autônomo com Playwright
+- Processamento inteligente de conteúdo
+- Integração automática scraping → RAG
+- Endpoints de scraping individual e batch
+
+### ✅ Sprint 2 (Multi-Model) - Concluído
+- Sistema de roteamento inteligente de modelos
+- Adaptador Qwen3 Coder para programação
+- Adaptador Stable Diffusion para imagens
+- Detecção automática de intenção
+- API multi-modelo unificada
+
+### ✅ Sprint 3 (UI Profissional) - Concluído
+- Interface moderna com Next.js 14 + TypeScript
+- Chat em tempo real com backend multi-modelo
+- Design responsivo com Tailwind CSS
+- Indicadores visuais por tipo de resposta
+- Integração completa com API backend
+
 ## Primeiros Passos
-1.  Clone o repositório: `git clone https://github.com/seu-usuario/aurax.git`
-2.  Leia a documentação em `docs/` para entender a arquitetura e os planos.
-3.  Configure o ambiente de desenvolvimento conforme instruções em `docs/QUICK_START.md` (a ser criado).
+
+### Backend (Sprints 0-2)
+```bash
+cd backend/
+pip install -r requirements.txt
+python main.py
+# Acesse http://localhost:8000/docs para API docs
+```
+
+### Frontend (Sprint 3)  
+```bash
+cd frontend/
+npm install
+npm run dev
+# Acesse http://localhost:3000 para a interface
+```
+
+### Documentação
+- [Arquitetura Completa](./docs/ARCHITECTURE.md)
+- [ROADMAP Detalhado](./docs/ROADMAP.md)
+- [Backend README](./backend/README.md)
+- [Frontend README](./frontend/README.md)
 
 ## Contribuindo
 Contribuições são bem-vindas! Por favor, leia `CONTRIBUTING.md` (a ser criado) para detalhes sobre nosso código de conduta e o processo de envio de pedidos de pull.
