@@ -1,0 +1,4 @@
+# AURAX Sprint 4 - Load Testing Requirements
+locust>=2.17.0
+requests>=2.31.0
+numpy>=1.24.0

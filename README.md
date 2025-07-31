@@ -71,6 +71,13 @@ aurax/
 - Indicadores visuais por tipo de resposta
 - Integração completa com API backend
 
+### ✅ Sprint 4 (Escalonamento) - Concluído
+- **Monitoramento Completo**: Prometheus + Grafana
+- **Auto-Scaling**: Configuração para RunPod Serverless
+- **Testes de Carga**: Locust para performance testing
+- **Dashboards**: Visualização de métricas em tempo real
+- **Documentação**: Guia completo de scaling e monitoramento
+
 ## Primeiros Passos
 
 ### Backend (Sprints 0-2)
@@ -79,6 +86,7 @@ cd backend/
 pip install -r requirements.txt
 python main.py
 # Acesse http://localhost:8000/docs para API docs
+# Métricas disponíveis em http://localhost:8000/metrics
 ```
 
 ### Frontend (Sprint 3)  
@@ -89,11 +97,29 @@ npm run dev
 # Acesse http://localhost:3000 para a interface
 ```
 
+### Monitoramento (Sprint 4)
+```bash
+# Iniciar stack de monitoramento (Prometheus + Grafana)
+cd infrastructure/monitoring/
+docker-compose up -d
+
+# Acessar dashboards:
+# - Prometheus: http://localhost:9090
+# - Grafana: http://localhost:3001 (admin/aurax2024)
+
+# Executar testes de carga
+pip install locust
+cd tests/load_tests/
+locust -f locustfile.py --host=http://localhost:8000
+# Acesse http://localhost:8089 para interface de testes
+```
+
 ### Documentação
 - [Arquitetura Completa](./docs/ARCHITECTURE.md)
 - [ROADMAP Detalhado](./docs/ROADMAP.md)
 - [Backend README](./backend/README.md)
 - [Frontend README](./frontend/README.md)
+- [Guia de Auto-Scaling](./docs/SCALING.md)
 
 ## Contribuindo
 Contribuições são bem-vindas! Por favor, leia `CONTRIBUTING.md` (a ser criado) para detalhes sobre nosso código de conduta e o processo de envio de pedidos de pull.

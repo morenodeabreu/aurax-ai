@@ -1,0 +1,16 @@
+# AURAX Sprint 4 - Grafana Dashboards Provisioning
+# Automatically load dashboard configurations
+
+apiVersion: 1
+
+providers:
+  - name: 'AURAX Dashboards'
+    orgId: 1
+    folder: 'AURAX'
+    folderUid: aurax
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/json

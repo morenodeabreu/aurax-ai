@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import uvicorn
 import logging
+from prometheus_fastapi_instrumentator import Instrumentator
 from core.orchestrator import orchestrator
 from core.web_scraper import scrape_and_update_knowledge_base, rag_updater
 from core.model_router import route_request
@@ -25,6 +26,27 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Sprint 4: Prometheus Monitoring Setup
+instrumentator = Instrumentator(
+    should_group_status_codes=False,
+    should_ignore_untemplated=True,
+    should_respect_env_var=True,
+    should_instrument_requests_inprogress=True,
+    excluded_handlers=["/metrics"],
+    env_var_name="ENABLE_METRICS",
+    inprogress_name="aurax_inprogress",
+    inprogress_labels=True,
+)
+
+# Add custom metrics for AURAX
+instrumentator.add(
+    lambda info: info.modified_handler == "/generate",
+    lambda info: {"model_type": info.request.path_params.get("model", "default")}
+)
+
+# Initialize and expose metrics
+instrumentator.instrument(app).expose(app)
 
 
 class GenerateRequest(BaseModel):
