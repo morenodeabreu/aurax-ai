@@ -10,6 +10,7 @@ import uvicorn
 import logging
 from core.orchestrator import orchestrator
 from core.web_scraper import scrape_and_update_knowledge_base, rag_updater
+from core.model_router import route_request
 
 app = FastAPI(
     title="AURAX API",
@@ -32,6 +33,7 @@ class GenerateRequest(BaseModel):
     max_tokens: Optional[int] = 1000
     model: Optional[str] = None
     context_threshold: Optional[float] = 0.5
+    routing_metadata: Optional[Dict[str, Any]] = None
 
 
 class ScrapeRequest(BaseModel):
@@ -51,8 +53,10 @@ class GenerateResponse(BaseModel):
     success: bool
     query: str
     context: List[Dict[str, Any]]
-    response: Optional[str]
+    response: Optional[Any]  # Can be text, image data, etc.
+    response_type: Optional[str] = "text"  # "text", "code", "image"
     metadata: Optional[Dict[str, Any]]
+    routing_info: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
 
 
@@ -65,19 +69,20 @@ async def health_check():
 @app.post("/generate", response_model=GenerateResponse)
 async def generate(request: GenerateRequest):
     """
-    RAG-enhanced generation endpoint with LLM integration
-    Retrieves relevant context and generates contextual responses using LLM
+    Multi-model RAG-enhanced generation endpoint
+    Intelligently routes to appropriate models and generates contextual responses
     """
     if not request.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
     
     try:
-        # Use orchestrator for RAG + LLM pipeline
+        # Use orchestrator for multi-model RAG + LLM pipeline
         result = await orchestrator.generate_contextual_response(
             query=request.prompt,
             max_context_docs=3,
             context_score_threshold=request.context_threshold or 0.5,
-            model=request.model
+            model=request.model,
+            metadata=request.routing_metadata
         )
         
         if not result["success"]:
@@ -87,7 +92,9 @@ async def generate(request: GenerateRequest):
                 query=request.prompt,
                 context=result.get("context", []),
                 response=None,
+                response_type="error",
                 metadata=None,
+                routing_info=result.get("metadata", {}).get("routing"),
                 error=result.get("error", "Unknown error")
             )
         
@@ -96,7 +103,9 @@ async def generate(request: GenerateRequest):
             query=result["query"],
             context=result["context"],
             response=result["response"],
-            metadata=result["metadata"]
+            response_type=result.get("response_type", "text"),
+            metadata=result["metadata"],
+            routing_info=result.get("metadata", {}).get("routing")
         )
         
     except Exception as e:
@@ -106,7 +115,9 @@ async def generate(request: GenerateRequest):
             query=request.prompt,
             context=[],
             response=None,
+            response_type="error",
             metadata=None,
+            routing_info=None,
             error="Internal server error"
         )
 
@@ -117,9 +128,37 @@ async def root():
     return {
         "message": "AURAX API is running", 
         "version": "0.1.0",
-        "features": ["RAG", "LLM Integration", "Knowledge Base", "Web Scraping"],
+        "features": ["RAG", "Multi-Model LLM", "Knowledge Base", "Web Scraping", "Intelligent Routing"],
         "docs": "/docs"
     }
+
+
+@app.post("/route")
+async def route_query(request: Dict[str, Any]):
+    """Test model routing for a given query"""
+    try:
+        query = request.get("query", "")
+        metadata = request.get("metadata", {})
+        
+        if not query.strip():
+            raise HTTPException(status_code=400, detail="Query cannot be empty")
+        
+        route_result = route_request(query, metadata)
+        
+        return {
+            "success": True,
+            "query": query,
+            "routing": {
+                "model_type": route_result.model_type.value,
+                "confidence": route_result.confidence,
+                "reasoning": route_result.reasoning,
+                "suggested_parameters": route_result.suggested_parameters
+            }
+        }
+        
+    except Exception as e:
+        logging.error(f"Error in route endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/system/status")

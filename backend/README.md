@@ -24,6 +24,15 @@ Sistema autônomo de IA para geração de aplicações completas - Backend API
 - ✅ Chunkização otimizada para RAG
 - ✅ Suporte completo a Docker com Playwright
 
+### Sprint 2 (Multi-Model) - Concluído
+- ✅ Sistema de roteamento inteligente de modelos
+- ✅ Adaptador Qwen3 Coder para tarefas de programação
+- ✅ Adaptador Stable Diffusion para geração de imagens
+- ✅ Detecção automática de intenção (código, imagem, texto)
+- ✅ Integração multi-modelo com pipeline RAG
+- ✅ Endpoint de teste de roteamento
+- ✅ Fallbacks inteligentes entre modelos
+
 ## Estrutura do Projeto
 
 ```
@@ -31,20 +40,26 @@ backend/
 ├── api/              # Endpoints da API (futura expansão)
 ├── core/             # Lógica central
 │   ├── __init__.py
-│   ├── orchestrator.py       # Orquestrador RAG + LLM
+│   ├── orchestrator.py       # Orquestrador RAG + Multi-LLM
 │   ├── rag/          # Sistema RAG
 │   │   ├── __init__.py
 │   │   ├── qdrant_client.py    # Cliente Qdrant
 │   │   └── retriever.py        # Lógica de recuperação
-│   ├── llm/          # Sistema LLM
+│   ├── llm/          # Sistema LLM base
 │   │   ├── __init__.py
 │   │   └── ollama_client.py    # Cliente Ollama
+│   ├── model_router/ # Roteamento Inteligente
+│   │   ├── __init__.py
+│   │   └── router.py           # Roteador multi-modelo
+│   ├── models/       # Adaptadores Especializados
+│   │   ├── __init__.py
+│   │   ├── qwen3_coder_adapter.py    # Qwen3 para código
+│   │   └── stable_diffusion_adapter.py # Stable Diffusion
 │   └── web_scraper/  # Sistema de Web Scraping
 │       ├── __init__.py
 │       ├── scraper.py          # Scraper com Playwright
 │       ├── processor.py        # Processador de conteúdo
 │       └── rag_updater.py      # Integração scraping → RAG
-├── models/           # Modelos Pydantic (futura expansão)
 ├── scripts/          # Scripts de instalação
 │   └── install_playwright_deps.sh
 ├── utils/            # Utilitários gerais (futura expansão)
@@ -106,23 +121,48 @@ docker run -p 8000:8000 aurax-backend
 Health check da aplicação
 
 ### `POST /generate`
-Endpoint principal de geração com RAG + LLM
+Endpoint principal de geração com roteamento multi-modelo
 - **Entrada**: 
   ```json
   {
-    "prompt": "sua consulta aqui",
-    "model": "mistral:7b-instruct-q4_K_M",  // opcional
-    "context_threshold": 0.7  // opcional, padrão 0.5
+    "prompt": "Write a Python function to sort a list",
+    "model": "qwen3:coder",  // opcional, usa roteamento se omitido
+    "context_threshold": 0.5,  // opcional
+    "routing_metadata": {"preferred_model": "code"}  // opcional
   }
   ```
 - **Saída**: 
   ```json
   {
     "success": true,
-    "query": "consulta original",
-    "context": [{"text": "...", "score": 0.8}],
-    "response": "resposta gerada pelo LLM",
-    "metadata": {"context_docs_count": 2, "model_used": "mistral:7b"}
+    "query": "Write a Python function to sort a list",
+    "context": [{"text": "sorting algorithms...", "score": 0.8}],
+    "response": "def sort_list(items): return sorted(items)",
+    "response_type": "code",
+    "routing_info": {"model_type": "qwen3:coder", "confidence": 0.9},
+    "metadata": {"context_docs_count": 2, "model_used": "qwen3:coder"}
+  }
+  ```
+
+### `POST /route`
+Endpoint para testar roteamento de modelos
+- **Entrada**: 
+  ```json
+  {
+    "query": "Create an image of a sunset",
+    "metadata": {"category": "creative"}
+  }
+  ```
+- **Saída**: 
+  ```json
+  {
+    "success": true,
+    "query": "Create an image of a sunset",
+    "routing": {
+      "model_type": "stable-diffusion",
+      "confidence": 0.95,
+      "reasoning": "Image generation request detected"
+    }
   }
   ```
 
@@ -190,15 +230,33 @@ Todas as configurações são gerenciadas via `../config/settings.py` usando Pyd
 - `MAX_TOKENS`: Máximo de tokens para geração (padrão: 2000)
 - `TEMPERATURE`: Temperatura para geração (padrão: 0.7)
 
+### Multi-Model System:
+- Roteamento automático baseado em análise de intenção
+- Suporte a modelos de código, imagem e texto
+- Fallbacks inteligentes entre modelos
+- Parâmetros otimizados por tipo de tarefa
+
 ### Web Scraping:
 - Configurações de scraping são gerenciadas internamente
 - Playwright roda em modo headless por padrão
 - Timeout de 30s para carregamento de páginas
 - Chunkização: 800 caracteres com overlap de 100
 
-## Arquitetura Completa: Web Scraping + RAG + LLM
+## Arquitetura Completa: Multi-Model AI System
 
-O sistema utiliza uma arquitetura de pipeline integrada e autônoma:
+O sistema utiliza uma arquitetura de pipeline integrada com roteamento inteligente:
+
+### Roteamento Multi-Modelo:
+- **ModelRouter**: Análise automática de intenção usando heurísticas avançadas
+- **Detecção de Tarefas**: Identifica automáticamente código, imagens, texto geral
+- **Confidence Scoring**: Sistema de confiança para decisões de roteamento
+- **Fallback Inteligente**: Volta ao modelo padrão quando especializados falham
+
+### Modelos Especializados:
+- **Qwen3 Coder**: Tarefas de programação com temperatura baixa (0.3)
+- **Stable Diffusion**: Geração de imagens com parâmetros otimizados
+- **Mistral 7B**: Modelo padrão para tarefas gerais de texto
+- **Adapters Pattern**: Interface uniforme para todos os modelos
 
 ### Componentes Web Scraping:
 - **Playwright**: Navegação robusta com Chromium headless
@@ -212,25 +270,21 @@ O sistema utiliza uma arquitetura de pipeline integrada e autônoma:
 - **Busca por similaridade**: Recuperação dos top-k documentos mais relevantes
 - **Atualização autônoma**: Pipeline scraping → processamento → RAG
 
-### Componentes LLM:
-- **Ollama**: Servidor local para modelos de linguagem
-- **Mistral 7B Instruct**: Modelo de linguagem para geração contextual
-- **Pipeline Web → RAG → LLM**: Conteúdo web enriquece respostas contextualmente
-
-### Orquestração:
-- **AuraxOrchestrator**: Coordena o fluxo RAG + LLM
+### Orquestração Avançada:
+- **AuraxOrchestrator**: Coordena roteamento + RAG + multi-LLM
 - **RAGUpdater**: Coordena scraping web + atualização RAG
 - **Tratamento de erros**: Fallbacks robusto em todos os componentes
-- **Formatação inteligente**: Templates de prompt otimizados para conteúdo web
+- **Templates Especializados**: Prompts otimizados por tipo de modelo
 
-## Próximos Passos (Sprint 2)
+## Próximos Passos (Sprint 3)
 
-- [ ] Roteamento inteligente entre múltiplos modelos LLM
-- [ ] Integração com Qwen3 Coder para tarefas de código
-- [ ] Stable Diffusion para geração de imagens
-- [ ] Sistema de autenticação e autorização
+- [ ] Interface gráfica profissional com Next.js
+- [ ] Sistema de autenticação e autorização completo
+- [ ] Painel de histórico de conversações
+- [ ] Suporte a temas (claro/escuro)
 - [ ] Rate limiting e medidas de segurança avançadas
 - [ ] Monitoramento e logs estruturados
+- [ ] Indicadores visuais de limites e bloqueios
 
 ## Desenvolvimento
 
