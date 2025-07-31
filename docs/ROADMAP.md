@@ -1,13 +1,21 @@
-# Roadmap do AURAX
+# Roadmap do AURAX - STATUS ATUAL
+
+**✅ Sprint 0 (MVP): CONCLUÍDO** - Sistema RAG + LLM funcional  
+**✅ Sprint 1 (Autonomia Web): CONCLUÍDO** - Scraping autônomo integrado  
+**🎯 Sprint 2 (Multi-Model): PRÓXIMO** - Roteamento inteligente de modelos  
+**📅 Sprint 3 (UI Profissional): PLANEJADO** - Interface completa  
+**📅 Sprint 4 (Escalonamento): PLANEJADO** - Produção com 100 usuários  
+
+---
 
 ## Visão Geral
-| Fase       | Duração   | Objetivo Principal                          | Entregáveis                           |
-|------------|-----------|---------------------------------------------|---------------------------------------|
-| **Sprint 0** | 1 semana  | MVP Funcional                               | Sistema básico com RAG + 1 modelo     |
-| **Sprint 1** | 2 semanas | Autonomia Web                               | Scraping automático integrado         |
-| **Sprint 2** | 3 semanas | Multi-Model                                 | Roteamento entre Qwen3 + Mistral      |
-| **Sprint 3** | 4 semanas | UI Profissional                             | Interface completa com anti-abuso     |
-| **Sprint 4** | 2 semanas | Escalonamento                               | Suporte a 100 usuários simultâneos    |
+| Fase       | Status | Duração   | Objetivo Principal                          | Entregáveis                           |
+|------------|--------|-----------|---------------------------------------------|---------------------------------------|
+| **Sprint 0** | ✅ CONCLUÍDO | 1 semana  | MVP Funcional                               | Sistema básico com RAG + 1 modelo     |
+| **Sprint 1** | ✅ CONCLUÍDO | 2 semanas | Autonomia Web                               | Scraping automático integrado         |
+| **Sprint 2** | 🎯 PRÓXIMO | 3 semanas | Multi-Model                                 | Roteamento entre Qwen3 + Mistral      |
+| **Sprint 3** | 📅 PLANEJADO | 4 semanas | UI Profissional                             | Interface completa com anti-abuso     |
+| **Sprint 4** | 📅 PLANEJADO | 2 semanas | Escalonamento                               | Suporte a 100 usuários simultâneos    |
 
 ## Detalhamento do Sprint 0 (MVP em 7 Dias)
 
@@ -62,3 +70,57 @@
 | 1      | Implementar auto-scaling na RunPod               | Sistema escala recursos automaticamente                | DevOps      |
 | 2      | Realizar testes de carga com 100 usuários        | Sistema suporta carga sem degradação                   | QA          |
 | 2      | Documentar processo de deploy e escalonamento    | Guia para operação em produção                         | DevOps      |
+
+---
+
+## Histórico de Conclusões
+
+### ✅ Sprint 0 (MVP) - Concluído em Janeiro 2025
+
+**Implementações realizadas:**
+- ✅ Estrutura básica do projeto com FastAPI
+- ✅ Sistema RAG (Retrieval Augmented Generation) com Qdrant
+- ✅ Integração com LLM (Mistral 7B via Ollama)
+- ✅ Pipeline RAG + LLM para respostas contextuais
+- ✅ Sistema de orquestração inteligente
+- ✅ Endpoints API: `/generate`, `/health`, `/system/status`
+- ✅ Configuração via variáveis de ambiente com Pydantic Settings
+- ✅ Containerização completa com Docker
+- ✅ Tratamento robusto de erros e fallbacks
+
+**Funcionalidades entregues:**
+- API funcional com geração de respostas contextuais
+- Base de conhecimento vetorial operacional
+- Integração completa entre componentes RAG e LLM
+- Sistema pronto para receber conteúdo e gerar respostas inteligentes
+
+### ✅ Sprint 1 (Autonomia Web) - Concluído em Janeiro 2025
+
+**Implementações realizadas:**
+- ✅ Sistema de scraping web com Playwright e Chromium headless
+- ✅ Processamento inteligente de conteúdo web com Trafilatura
+- ✅ Pipeline de chunking otimizado para RAG (LangChain Text Splitters)
+- ✅ Integração automática: Web Scraping → Processamento → RAG
+- ✅ Endpoints de scraping: `/scrape`, `/scrape/batch`, `/scrape/stats`
+- ✅ Filtragem avançada e limpeza de conteúdo web
+- ✅ Detecção automática de tipos de conteúdo e tópicos
+- ✅ Suporte completo a Docker com dependências do Playwright
+- ✅ Validação de segurança para URLs
+
+**Funcionalidades entregues:**
+- Sistema completamente autônomo para enriquecer base de conhecimento
+- Capacidade de scraping individual e em lote (até 10 URLs)
+- Processamento inteligente que filtra ruído e mantém conteúdo relevante
+- Integração perfeita com sistema RAG existente
+- API expandida com funcionalidades de scraping web
+
+**Status atual do backend AURAX:**
+O backend está funcional e autônomo, com capacidades completas de:
+- Geração de respostas contextuais usando RAG + LLM
+- Scraping automático de conteúdo web
+- Processamento e chunking inteligente de documentos
+- Base de conhecimento vetorial dinâmica e expansível
+- API robusta com tratamento de erros e validações de segurança
+
+### 🎯 Próximo: Sprint 2 (Multi-Model)
+Objetivo: Implementar roteamento inteligente entre múltiplos modelos LLM (Qwen3 Coder + Mistral + Stable Diffusion) para diferentes tipos de tarefas.
