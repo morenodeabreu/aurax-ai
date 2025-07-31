@@ -15,6 +15,15 @@ Sistema autônomo de IA para geração de aplicações completas - Backend API
 - ✅ Containerização com Docker
 - ✅ Tratamento robusto de erros e fallbacks
 
+### Sprint 1 (Autonomia Web) - Concluído
+- ✅ Sistema de scraping web com Playwright
+- ✅ Processamento inteligente de conteúdo web
+- ✅ Integração automática scraping → RAG
+- ✅ Endpoints de scraping (individual e batch)
+- ✅ Filtragem e limpeza de conteúdo web
+- ✅ Chunkização otimizada para RAG
+- ✅ Suporte completo a Docker com Playwright
+
 ## Estrutura do Projeto
 
 ```
@@ -27,10 +36,17 @@ backend/
 │   │   ├── __init__.py
 │   │   ├── qdrant_client.py    # Cliente Qdrant
 │   │   └── retriever.py        # Lógica de recuperação
-│   └── llm/          # Sistema LLM
+│   ├── llm/          # Sistema LLM
+│   │   ├── __init__.py
+│   │   └── ollama_client.py    # Cliente Ollama
+│   └── web_scraper/  # Sistema de Web Scraping
 │       ├── __init__.py
-│       └── ollama_client.py    # Cliente Ollama
+│       ├── scraper.py          # Scraper com Playwright
+│       ├── processor.py        # Processador de conteúdo
+│       └── rag_updater.py      # Integração scraping → RAG
 ├── models/           # Modelos Pydantic (futura expansão)
+├── scripts/          # Scripts de instalação
+│   └── install_playwright_deps.sh
 ├── utils/            # Utilitários gerais (futura expansão)
 ├── main.py           # Aplicação FastAPI principal
 ├── requirements.txt  # Dependências Python
@@ -41,13 +57,23 @@ backend/
 
 ### Pré-requisitos
 - Python 3.11+
-- Qdrant rodando em `localhost:6333` (ou configurado via variáveis de ambiente)
+- Qdrant rodando em `localhost:6333`
 - Ollama rodando em `localhost:11434` com modelo `mistral:7b-instruct-q4_K_M`
-  ```bash
-  # Instalar Ollama: https://ollama.ai
-  ollama pull mistral:7b-instruct-q4_K_M
-  ollama serve
-  ```
+- Playwright e dependências do navegador
+
+#### Instalação dos Serviços:
+```bash
+# Instalar Ollama: https://ollama.ai
+ollama pull mistral:7b-instruct-q4_K_M
+ollama serve
+
+# Instalar Qdrant via Docker:
+docker run -p 6333:6333 qdrant/qdrant
+
+# Instalar Playwright (após pip install):
+playwright install chromium
+playwright install-deps chromium
+```
 
 ### Configuração Local
 
@@ -111,6 +137,40 @@ Informações sobre a base de conhecimento RAG (endpoint legado)
 Adicionar documentos à base de conhecimento
 - **Entrada**: Lista de documentos com campo "text"
 
+### `POST /scrape`
+Scraping de URL individual e adição automática à base de conhecimento
+- **Entrada**: 
+  ```json
+  {
+    "url": "https://example.com/article",
+    "metadata": {"category": "tech"}  // opcional
+  }
+  ```
+- **Saída**: 
+  ```json
+  {
+    "success": true,
+    "url": "https://example.com/article",
+    "title": "Título da Página",
+    "chunks_created": 5,
+    "chunks_added_to_rag": 5,
+    "content_length": 2500
+  }
+  ```
+
+### `POST /scrape/batch`
+Scraping de múltiplas URLs (máximo 10 por batch)
+- **Entrada**: 
+  ```json
+  {
+    "urls": ["https://site1.com", "https://site2.com"],
+    "metadata": {"batch_id": "tech_docs_001"}
+  }
+  ```
+
+### `GET /scrape/stats`
+Estatísticas do conteúdo scrapeado na base de conhecimento
+
 ### `GET /docs`
 Documentação interativa da API (Swagger)
 
@@ -130,29 +190,44 @@ Todas as configurações são gerenciadas via `../config/settings.py` usando Pyd
 - `MAX_TOKENS`: Máximo de tokens para geração (padrão: 2000)
 - `TEMPERATURE`: Temperatura para geração (padrão: 0.7)
 
-## Arquitetura RAG + LLM
+### Web Scraping:
+- Configurações de scraping são gerenciadas internamente
+- Playwright roda em modo headless por padrão
+- Timeout de 30s para carregamento de páginas
+- Chunkização: 800 caracteres com overlap de 100
 
-O sistema utiliza uma arquitetura de pipeline integrada:
+## Arquitetura Completa: Web Scraping + RAG + LLM
+
+O sistema utiliza uma arquitetura de pipeline integrada e autônoma:
+
+### Componentes Web Scraping:
+- **Playwright**: Navegação robusta com Chromium headless
+- **Trafilatura**: Extração inteligente de conteúdo principal
+- **ContentProcessor**: Limpeza, filtragem e chunkização otimizada
+- **Segurança**: Validação de URLs e filtragem de conteúdo malicioso
 
 ### Componentes RAG:
 - **Qdrant**: Banco de dados vetorial para armazenamento e busca
 - **sentence-transformers**: Geração de embeddings (modelo: all-MiniLM-L6-v2)
 - **Busca por similaridade**: Recuperação dos top-k documentos mais relevantes
+- **Atualização autônoma**: Pipeline scraping → processamento → RAG
 
 ### Componentes LLM:
 - **Ollama**: Servidor local para modelos de linguagem
 - **Mistral 7B Instruct**: Modelo de linguagem para geração contextual
-- **Pipeline RAG→LLM**: Contexto recuperado é formatado e enviado ao LLM
+- **Pipeline Web → RAG → LLM**: Conteúdo web enriquece respostas contextualmente
 
 ### Orquestração:
 - **AuraxOrchestrator**: Coordena o fluxo RAG + LLM
-- **Tratamento de erros**: Fallbacks quando serviços não estão disponíveis
-- **Formatação inteligente**: Templates de prompt otimizados para RAG
+- **RAGUpdater**: Coordena scraping web + atualização RAG
+- **Tratamento de erros**: Fallbacks robusto em todos os componentes
+- **Formatação inteligente**: Templates de prompt otimizados para conteúdo web
 
-## Próximos Passos (Sprint 1)
+## Próximos Passos (Sprint 2)
 
-- [ ] Web scraping automático com Playwright para alimentar a base de conhecimento
-- [ ] Pipeline de atualização automática do RAG
+- [ ] Roteamento inteligente entre múltiplos modelos LLM
+- [ ] Integração com Qwen3 Coder para tarefas de código
+- [ ] Stable Diffusion para geração de imagens
 - [ ] Sistema de autenticação e autorização
 - [ ] Rate limiting e medidas de segurança avançadas
 - [ ] Monitoramento e logs estruturados
