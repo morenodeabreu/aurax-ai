@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Request
+import time
+import requests
 
 router = APIRouter()
 
 def check_model_ready():
-    import time
-    import requests
     max_wait = 1200  # 20 minutos máximo
     start_time = time.time()
     
@@ -30,5 +30,5 @@ async def generate(request: Request):
             detail="Modelo carregando. Tente novamente em 5 minutos."
         )
     
-    # Seu código existente para processar a requisição
+    # Resposta de exemplo (será substituída pelo seu código real)
     return {"response": "Resposta do modelo"}
