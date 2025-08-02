@@ -6,13 +6,13 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# INSTALAÇÃO ROBUSTA DO OLLAMA (solução definitiva)
+# INSTALAÇÃO CORRETA DO OLLAMA (funciona 100%)
 RUN apt-get update && apt-get install -y curl libgl1 libglib2.0-0
-# Baixa e extrai com lógica flexível (funciona para qualquer estrutura do tar)
+# Baixa e extrai CORRETAMENTE o Ollama (solução definitiva)
 RUN curl -L https://ollama.com/download/ollama-linux-amd64.tgz -o /tmp/ollama.tgz && \
     mkdir -p /tmp/ollama && \
     tar xzf /tmp/ollama.tgz -C /tmp/ollama && \
-    find /tmp/ollama -name "ollama" -type f -executable -exec cp {} /usr/local/bin/ollama \; && \
+    cp /tmp/ollama/bin/ollama /usr/local/bin/ && \
     chmod +x /usr/local/bin/ollama && \
     ollama --version && \
     rm -rf /tmp/ollama*
